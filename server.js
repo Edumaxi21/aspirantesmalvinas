@@ -1,58 +1,87 @@
-// server.js - Servidor de Señalización para WebRTC (Optimizado para Render)
+// server.js - Servidor Inteligente (Guardián de la Información)
 const WebSocket = require('ws');
-
-// Render asigna un puerto dinámicamente. Usamos process.env.PORT.
-// Si no lo encuentra (para pruebas locales), usa el puerto 3000.
 const PORT = process.env.PORT || 3000;
-
 const wss = new WebSocket.Server({ port: PORT });
 
-let users = {};
+// Esta variable guardará todo el contenido de las clases y juegos en la memoria del servidor.
+let appState = {
+    classes: [],
+    games: []
+};
 
-console.log(`Servidor de señalización iniciado en el puerto ${PORT}. ¡Listo para recibir conexiones!`);
+console.log(`Servidor guardián iniciado en el puerto ${PORT}.`);
 
 wss.on('connection', ws => {
-    const userId = 'user-' + Math.random().toString(36).substr(2, 9);
-    users[userId] = ws;
-    console.log(`Usuario conectado: ${userId}. Total: ${Object.keys(users).length}`);
+    console.log("Nuevo aspirante conectado. Enviando estado actual...");
 
-    ws.send(JSON.stringify({ type: 'id', id: userId }));
-    ws.send(JSON.stringify({ type: 'all_users', users: Object.keys(users).filter(id => id !== userId) }));
+    // 1. Cuando alguien se conecta, se le envía inmediatamente todo el contenido guardado.
+    ws.send(JSON.stringify({
+        type: 'full_state_update',
+        payload: appState
+    }));
 
-    broadcast({ type: 'user_joined', id: userId }, ws);
-
+    // 2. Se manejan los mensajes que llegan del cliente.
     ws.on('message', message => {
         try {
             const data = JSON.parse(message);
-            if (data.type === 'signal' && data.to && users[data.to]) {
-                users[data.to].send(JSON.stringify({
-                    type: 'signal',
-                    from: data.from,
-                    signal: data.signal
-                }));
+            let updatePayload = null; // Lo que se retransmitirá a todos
+
+            // Se analiza el tipo de acción que realizó el usuario
+            switch (data.type) {
+                case 'class_add':
+                    appState.classes.push(data.payload);
+                    updatePayload = { type: 'class_add', payload: data.payload };
+                    console.log(`Clase agregada: ${data.payload.title}`);
+                    break;
+
+                case 'class_update':
+                    const classIndex = appState.classes.findIndex(c => c.docId === data.payload.docId);
+                    if (classIndex !== -1) {
+                        appState.classes[classIndex].content = data.payload.content;
+                        updatePayload = { type: 'class_update', payload: data.payload };
+                        console.log(`Clase actualizada: ${appState.classes[classIndex].title}`);
+                    }
+                    break;
+                
+                case 'class_delete':
+                    appState.classes = appState.classes.filter(c => c.docId !== data.payload.docId);
+                    updatePayload = { type: 'class_delete', payload: data.payload };
+                    console.log(`Clase eliminada: ${data.payload.docId}`);
+                    break;
+
+                case 'game_add':
+                    appState.games.push(data.payload);
+                    updatePayload = { type: 'game_add', payload: data.payload };
+                    console.log(`Juego agregado: ${data.payload.title}`);
+                    break;
+                
+                case 'game_delete':
+                    appState.games = appState.games.filter(g => g.docId !== data.payload.docId);
+                    updatePayload = { type: 'game_delete', payload: data.payload };
+                    console.log(`Juego eliminado: ${data.payload.docId}`);
+                    break;
             }
+
+            // Si hubo un cambio, se retransmite a TODOS los clientes conectados.
+            if (updatePayload) {
+                broadcast(JSON.stringify(updatePayload));
+            }
+
         } catch (e) {
             console.error("Error procesando mensaje:", e);
         }
     });
 
     ws.on('close', () => {
-        console.log(`Usuario desconectado: ${userId}`);
-        delete users[userId];
-        broadcast({ type: 'user_left', id: userId });
-        console.log(`Total de usuarios restantes: ${Object.keys(users).length}`);
-    });
-
-    ws.on('error', (err) => {
-        console.error(`Error en la conexión del usuario ${userId}:`, err);
+        console.log("Un aspirante se ha desconectado.");
     });
 });
 
-function broadcast(data, excludeWs) {
-    for (const id in users) {
-        const client = users[id];
-        if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
+// Función para enviar un mensaje a todos
+function broadcast(data) {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(data);
         }
-    }
+    });
 }
