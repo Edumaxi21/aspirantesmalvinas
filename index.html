@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Estudio Colaborativa - Aspirantes 2025 (Versión Local)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <style>
+        /* Tu CSS original va aquí, no ha cambiado */
+        :root {
+            --bg-color: #F9FAFB;
+            --text-color: #1F2937;
+            --text-muted-color: #6B7280;
+            --card-bg-color: white;
+            --border-color: #E5E7EB;
+            --input-bg-color: white;
+            --input-text-color: #1F2937;
+            --summary-text-color: #1F2937;
+            --accent-color: #2563EB;
+        }
+        body.dark-mode {
+            --bg-color: #111827;
+            --text-color: #F9FAFB;
+            --text-muted-color: #9CA3AF;
+            --card-bg-color: #1F2937;
+            --border-color: #374151;
+            --input-bg-color: #374151;
+            --input-text-color: #F9FAFB;
+            --summary-text-color: #F9FAFB;
+            --accent-color: #3B82F6;
+        }
+        body.sepia-mode {
+            --bg-color: #f5f0e1;
+            --text-color: #5d4037;
+            --text-muted-color: #9e8a7e;
+            --card-bg-color: #e8e0d1;
+            --border-color: #d7c7b7;
+            --input-bg-color: #f5f0e1;
+            --input-text-color: #5d4037;
+            --summary-text-color: #4e342e;
+            --accent-color: #8d6e63;
+        }
+        .details-content * {
+            color: var(--text-color) !important;
+            background-color: transparent !important;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+        .hero-bg { background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), url('https://placehold.co/1200x800/222/FFF?text=Aspirantes+a+Bomberos'); background-size: cover; background-position: center; }
+        .section-title { border-left: 4px solid #EF4444; padding-left: 1rem; }
+        .info-details { background-color: var(--card-bg-color); border-radius: 0.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); border: 1px solid var(--border-color); transition: box-shadow 0.3s, background-color 0.3s, border-color 0.3s; }
+        .info-details:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05); }
+        .info-summary { font-weight: 600; font-size: 1.125rem; padding: 1rem 1.5rem; cursor: pointer; display: flex; align-items: center; list-style: none; color: var(--summary-text-color); }
+        .info-summary::-webkit-details-marker { display: none; }
+        .info-summary .summary-icon { transition: transform 0.2s ease-in-out; }
+        .info-details[open] > .info-summary .summary-icon { transform: rotate(180deg); }
+        .details-content { padding: 1.5rem; color: var(--text-color); line-height: 1.7; }
+        .details-content[contenteditable="true"] { background-color: #fef9c3; outline: 2px solid #f59e0b; border-radius: 0.25rem; min-height: 150px; }
+        body.dark-mode .details-content[contenteditable="true"] { background-color: #4b5563; }
+        .details-content h4 { font-size: 1.25rem; font-weight: 700; color: #DC2626; margin-top: 1.5rem; margin-bottom: 0.75rem; padding-bottom: 0.25rem; border-bottom: 2px solid var(--border-color); }
+        .details-content h5 { font-size: 1.1rem; font-weight: 600; color: var(--text-color); margin-top: 1.25rem; margin-bottom: 0.5rem; }
+        .details-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .details-content li { margin-bottom: 0.5rem; }
+        .details-content img, .details-content iframe { max-width: 100%; height: auto; margin: 1rem auto; border-radius: 0.5rem; display: block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .details-content strong, .details-content b { color: var(--text-color); }
+        .code-list { font-family: monospace; background-color: #f3f4f6; padding: 1rem; border-radius: 0.5rem; }
+        body.dark-mode .code-list { background-color: #374151; }
+        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111827; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; text-align: center; padding: 2rem; }
+        .edit-button { margin-left: auto; padding: 0.25rem 0.75rem; font-size: 0.8rem; background-color: #e5e7eb; border: 1px solid #d1d5db; border-radius: 0.375rem; color: #4b5563; cursor: pointer; transition: background-color 0.2s; }
+        .edit-button:hover { background-color: #d1d5db; }
+        .action-buttons { display: none; padding: 0.5rem 1.5rem 1rem; text-align: right; border-top: 1px solid var(--border-color); }
+        .action-button { padding: 0.5rem 1rem; border-radius: 0.375rem; border: none; cursor: pointer; font-weight: 600; margin-left: 0.5rem; }
+        .save-button { background-color: #16a34a; color: white; }
+        .undo-button { background-color: #6b7280; color: white; }
+        .delete-button { background-color: #dc2626; color: white; }
+        .footer-links a { transition: color 0.2s; }
+        .footer-links a:hover { color: #ef4444; }
+        .editor-toolbar { display: none; flex-wrap: wrap; align-items: center; padding: 0.5rem; background-color: var(--card-bg-color); border-bottom: 1px solid var(--border-color); }
+        .editor-toolbar button, .editor-toolbar .color-picker-wrapper { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 0.25rem 0.5rem; margin-right: 0.5rem; margin-bottom: 0.5rem; border-radius: 0.25rem; display: inline-flex; align-items: center; }
+        .color-picker-wrapper { position: relative; }
+        .color-picker { -webkit-appearance: none; -moz-appearance: none; appearance: none; width: 24px; height: 24px; padding: 0; border: none; background: transparent; cursor: pointer; }
+        .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
+        .theme-card { background-color: var(--card-bg-color); border: 1px solid var(--border-color); }
+        .custom-input { background-color: var(--input-bg-color); color: var(--input-text-color); border: 1px solid var(--border-color); }
+        body.dark-mode .edit-button, body.dark-mode .editor-toolbar button { background-color: #4b5563; border-color: #6b7280; color: #e5e7eb; }
+        body.dark-mode .edit-button:hover, body.dark-mode .editor-toolbar button:hover { background-color: #6b7280; }
+        #game-modal { transition: opacity 0.3s ease; }
+    </style>
+</head>
+<body>
+    
+    <div id="splash-screen">
+        <h1 class="text-4xl md:text-5xl font-bold mb-2">Aspirantes de Malvinas Argentinas</h1>
+        <p class="text-xl text-red-500 mb-6">INOVB 166</p>
+        <p id="motivational-phrase" class="text-lg text-gray-300 mb-8">"Servir es un honor, proteger es nuestra misión." ❤️</p>
+        <button id="enter-app-button" class="w-full max-w-sm bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition-transform transform hover:scale-105">Ingresar al Módulo de Estudio</button>
+    </div>
+
+    <div id="main-content" style="display: none;">
+        <header class="bg-gray-900 text-white shadow-md sticky top-0 z-50">
+            <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+                <a href="#" class="text-2xl font-bold text-red-500">Aspirantes 2025</a>
+                <div class="hidden md:flex space-x-4 lg:space-x-6">
+                    <a href="#clases" class="hover:text-red-400 text-sm lg:text-base">Materiales en Drive</a>
+                    <a href="#resumenes" class="hover:text-red-400 text-sm lg:text-base">Resumen de Clases</a>
+                    <a href="#juegos" class="hover:text-red-400 text-sm lg:text-base">Juegos</a>
+                </div>
+                <div class="md:hidden">
+                    <button id="menu-btn" class="text-white focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    </button>
+                </div>
+            </nav>
+            <div id="mobile-menu" class="hidden md:hidden px-6 pb-3 space-y-2">
+                <a href="#clases" class="block hover:text-red-400">Materiales en Drive</a>
+                <a href="#resumenes" class="block hover:text-red-400">Resumen de Clases</a>
+                <a href="#juegos" class="block hover:text-red-400">Juegos</a>
+            </div>
+        </header>
+
+        <section class="hero-bg text-white py-20 md:py-32">
+            <div class="container mx-auto text-center px-6">
+                <h1 class="text-4xl md:text-6xl font-bold mb-4">Módulo de Estudio Colaborativo</h1>
+                <p class="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">"Servir es un honor, proteger es nuestra misión." ❤️</p>
+            </div>
+        </section>
+
+        <main class="container mx-auto px-6 py-12">
+            <section id="clases" class="mb-16">
+                <h2 class="text-3xl font-bold mb-6 section-title">Materiales Oficiales de Estudio</h2>
+                <div class="theme-card p-8 text-center">
+                    <h3 class="font-bold text-2xl mb-4 flex items-center justify-center" style="color: var(--accent-color);">
+                        <i class="fas fa-folder-open mr-3"></i>Acceso a Materiales en Drive
+                    </h3>
+                    <p class="mb-6 max-w-2xl mx-auto">
+                        Aquí encontrarás todas las clases, documentos PDF y recursos oficiales. Es fundamental que uses este material como tu fuente principal de estudio.
+                    </p>
+                    <a href="https://drive.google.com/drive/folders/1N7rWK6zXRNCNvKKsD5CGdGxJySTVn9aB?usp=sharing" target="_blank" class="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105">
+                        <i class="fab fa-google-drive mr-2"></i>Ir a la Carpeta de Clases
+                    </a>
+                </div>
+            </section>
+
+            <section id="resumenes">
+                <h2 class="text-3xl font-bold mb-6 section-title">Resúmenes de Clases Colaborativos</h2>
+                <p class="mb-8">Utiliza estos resúmenes para repasar. Haz clic en "Modificar" para editar el contenido, y los cambios serán visibles para todos tus compañeros en tiempo real.</p>
+                
+                <div id="class-modules-container">
+                    </div>
+
+                <section id="add-class-section" class="mt-12">
+                    <h3 class="text-2xl font-bold mb-4 section-title">Agregar Nueva Clase</h3>
+                    <div class="theme-card p-6 rounded-lg shadow-lg">
+                        <div class="grid md:grid-cols-3 gap-4 mb-4">
+                             <div>
+                                <label for="new-class-number" class="block text-sm font-bold mb-2">N° de Clase:</label>
+                                <input type="number" id="new-class-number" class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline custom-input" placeholder="Ej: 14">
+                            </div>
+                             <div>
+                                <label for="new-class-icon" class="block text-sm font-bold mb-2">Icono (Font Awesome):</label>
+                                <input type="text" id="new-class-icon" class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline custom-input" placeholder="Ej: fas fa-fire">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label for="new-class-title" class="block text-sm font-bold mb-2">Título de la Clase:</label>
+                                <input type="text" id="new-class-title" class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline custom-input" placeholder="Ej: Nudos y Anclajes">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                             <label class="block text-sm font-bold mb-2">Contenido:</label>
+                             <div class="editor-toolbar mb-2" id="new-class-toolbar">
+                                 <button onmousedown="event.preventDefault(); formatDoc('new-class-content', 'bold');"><i class="fas fa-bold"></i></button>
+                                 <button onmousedown="event.preventDefault(); formatDoc('new-class-content', 'italic');"><i class="fas fa-italic"></i></button>
+                                 <button onmousedown="event.preventDefault(); formatDoc('new-class-content', 'insertUnorderedList');"><i class="fas fa-list-ul"></i></button>
+                                 <button onmousedown="event.preventDefault(); addMedia('imagen', 'new-class-content');"><i class="fas fa-image"></i></button>
+                                 <button onmousedown="event.preventDefault(); addMedia('video', 'new-class-content');"><i class="fas fa-video"></i></button>
+                                 <div class="color-picker-wrapper ml-2">
+                                     <label for="color-picker-new" class="sr-only">Color de texto</label>
+                                     <input type="color" id="color-picker-new" class="color-picker" onchange="formatDoc('new-class-content', 'foreColor', this.value)">
+                                 </div>
+                             </div>
+                            <div id="new-class-content" contenteditable="true" class="details-content border rounded p-4 h-48 overflow-y-auto">
+                               <p>Escribe aquí el contenido de tu nueva clase. Puedes usar los botones de arriba para dar formato.</p>
+                            </div>
+                        </div>
+                        <button id="add-class-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus-circle mr-2"></i>Agregar Clase
+                        </button>
+                    </div>
+                </section>
+            </section>
+
+            <section id="juegos" class="mb-16">
+                <h2 class="text-3xl font-bold mb-6 section-title">Juegos Interactivos</h2>
+                <p class="mb-8">Sección para juegos y actividades lúdicas creadas para repasar conceptos de forma interactiva.</p>
+                <div id="games-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    </div>
+            </section>
+
+            <section id="add-game-section" class="mt-12">
+                <h3 class="text-2xl font-bold mb-4 section-title">Agregar Nuevo Juego</h3>
+                <div class="theme-card p-6 rounded-lg shadow-lg">
+                    <div class="grid grid-cols-1 gap-4 mb-4">
+                        <div>
+                            <label for="new-game-title" class="block text-sm font-bold mb-2">Título del Juego:</label>
+                            <input type="text" id="new-game-title" class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline custom-input" placeholder="Ej: Test de Equipos">
+                        </div>
+                         <div>
+                            <label for="new-game-description" class="block text-sm font-bold mb-2">Descripción Corta:</label>
+                            <input type="text" id="new-game-description" class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline custom-input" placeholder="Ej: Un test rápido sobre EPP.">
+                        </div>
+                         <div>
+                            <label for="new-game-icon" class="block text-sm font-bold mb-2">Icono (Font Awesome):</label>
+                            <input type="text" id="new-game-icon" class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline custom-input" placeholder="Ej: fas fa-vial">
+                        </div>
+                        <div>
+                            <label for="new-game-full-code" class="block text-sm font-bold mb-2">Código Completo del Juego:</label>
+                            <textarea id="new-game-full-code" rows="10" class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline custom-input font-mono text-sm" placeholder="Pega aquí tu código completo (HTML, CSS y JS en un solo bloque)"></textarea>
+                        </div>
+                    </div>
+                    <button id="add-game-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                        <i class="fas fa-plus-circle mr-2"></i>Agregar Juego
+                    </button>
+                </div>
+            </section>
+        </main>
+        
+        <button id="to-top-button" title="Volver Arriba" class="hidden fixed bottom-5 right-5 z-50 p-3 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-opacity">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+        </button>
+
+        <footer class="bg-gray-900 text-white">
+            <div class="container mx-auto px-6 py-8 text-center">
+                <div class="flex justify-center items-center mb-4 space-x-2">
+                            <span class="mr-3 text-sm font-medium">Tema:</span>
+                            <button id="theme-light-btn" class="px-3 py-1 text-sm font-semibold rounded-md bg-gray-200 text-gray-800">Claro</button>
+                            <button id="theme-sepia-btn" class="px-3 py-1 text-sm font-semibold rounded-md bg-yellow-200 text-yellow-800">Sepia</button>
+                            <button id="theme-dark-btn" class="px-3 py-1 text-sm font-semibold rounded-md bg-gray-700 text-gray-200">Oscuro</button>
+                </div>
+                <div class="footer-links mb-4">
+                    <a href="https://www.instagram.com/maxiperez19" target="_blank" class="mx-2 hover:text-red-500"><i class="fab fa-instagram mr-1"></i>@maxiperez19</a>
+                    <a href="mailto:edumaxi21@gmail.com" class="mx-2 hover:text-red-500"><i class="fas fa-envelope mr-1"></i>edumaxi21@gmail.com</a>
+                </div>
+                    <p class="mt-2" style="color: var(--text-muted-color);">Sacrificio, Valor y Abnegación.</p>
+                    <p class="text-xs mt-6" style="color: var(--text-muted-color);">Sitio de estudio para Aspirantes a Bomberos Voluntarios 2025.</p>
+                    <p class="text-xs mt-2" style="color: var(--text-muted-color);">Página desarrollada por Gemini.</p>
+            </div>
+        </footer>
+
+        <div id="game-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4">
+            <div class="bg-gray-800 w-full h-full max-w-6xl rounded-lg shadow-xl flex flex-col">
+                <div class="flex justify-between items-center p-2 border-b border-gray-700">
+                    <h3 id="game-modal-title" class="text-white text-lg font-bold"></h3>
+                    <button id="close-modal-button" class="text-white text-2xl font-bold hover:text-red-500">×</button>
+                </div>
+                <div class="flex-grow p-1">
+                    <iframe id="game-canvas-iframe" class="w-full h-full border-0 bg-white" sandbox="allow-scripts allow-same-origin"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuración y Variables Globales ---
+        // CAMBIAR 'localhost' por la IP de la computadora que corre el servidor si están en la misma red
+        const SIGNALING_SERVER_URL = "ws://localhost:3000"; 
+        let localId;
+        let peerConnections = {}; // Almacena las conexiones {id: RTCPeerConnection}
+        let dataChannels = {}; // Almacena los canales de datos {id: RTCDataChannel}
+        let originalContent = {}; // Para la función de deshacer
+
+        let ws;
+
+        function connectToSignaling() {
+            ws = new WebSocket(SIGNALING_SERVER_URL);
+
+            ws.onopen = () => {
+                console.log("Conectado al servidor de señalización. ¡Listo para colaborar!");
+            };
+
+            ws.onmessage = async (message) => {
+                const data = JSON.parse(message.data);
+
+                switch (data.type) {
+                    case 'id':
+                        localId = data.id;
+                        console.log(`Recibí mi ID: ${localId}`);
+                        break;
+                    case 'all_users':
+                        console.log("Usuarios actuales en la sesión:", data.users);
+                        data.users.forEach(userId => {
+                            if (userId !== localId) {
+                                createPeerConnection(userId, true);
+                            }
+                        });
+                        break;
+                    case 'user_joined':
+                        if (data.id !== localId) {
+                            console.log(`Se unió un nuevo usuario: ${data.id}`);
+                            createPeerConnection(data.id, false);
+                        }
+                        break;
+                    case 'user_left':
+                        console.log(`El usuario ${data.id} se ha desconectado.`);
+                        if (peerConnections[data.id]) {
+                            peerConnections[data.id].close();
+                            delete peerConnections[data.id];
+                        }
+                        break;
+                    case 'signal':
+                        await handleSignal(data.from, data.signal);
+                        break;
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log("Desconectado del servidor de señalización. Intentando reconectar en 3 segundos...");
+                setTimeout(connectToSignaling, 3000);
+            };
+
+            ws.onerror = (error) => {
+                console.error("Error de WebSocket:", error);
+                ws.close();
+            };
+        }
+
+        function sendSignal(to, signal) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'signal', to, from: localId, signal }));
+            }
+        }
+
+        // --- Lógica de WebRTC ---
+        function createPeerConnection(partnerId, isInitiator) {
+            if (peerConnections[partnerId]) return;
+
+            const pc = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            peerConnections[partnerId] = pc;
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    sendSignal(partnerId, { candidate: event.candidate });
+                }
+            };
+            
+            pc.onconnectionstatechange = () => {
+                if(pc.connectionState === 'disconnected' || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
+                    console.log(`Conexión con ${partnerId} perdida.`);
+                    delete peerConnections[partnerId];
+                }
+            };
+
+            if (isInitiator) {
+                const dataChannel = pc.createDataChannel('dataChannel');
+                setupDataChannel(partnerId, dataChannel);
+                pc.createOffer()
+                    .then(offer => pc.setLocalDescription(offer))
+                    .then(() => sendSignal(partnerId, { sdp: pc.localDescription }))
+                    .catch(e => console.error("Error creando oferta:", e));
+            } else {
+                pc.ondatachannel = (event) => {
+                    setupDataChannel(partnerId, event.channel);
+                };
+            }
+        }
+        
+        async function handleSignal(fromId, signal) {
+            const pc = peerConnections[fromId];
+            if (!pc) {
+                createPeerConnection(fromId, false);
+            }
+
+            try {
+                if (signal.sdp) {
+                    await peerConnections[fromId].setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                    if (signal.sdp.type === 'offer') {
+                        const answer = await peerConnections[fromId].createAnswer();
+                        await peerConnections[fromId].setLocalDescription(answer);
+                        sendSignal(fromId, { sdp: peerConnections[fromId].localDescription });
+                    }
+                } else if (signal.candidate) {
+                    await peerConnections[fromId].addIceCandidate(new RTCIceCandidate(signal.candidate));
+                }
+            } catch (e) {
+                console.error("Error manejando la señal:", e);
+            }
+        }
+
+        function setupDataChannel(partnerId, channel) {
+            channel.onopen = () => console.log(`Canal de datos abierto con ${partnerId}`);
+            channel.onclose = () => console.log(`Canal de datos cerrado con ${partnerId}`);
+            channel.onmessage = (event) => {
+                handleIncomingUpdate(JSON.parse(event.data));
+            };
+            dataChannels[partnerId] = channel;
+        }
+
+        // --- Funciones para Sincronizar Contenido ---
+        function broadcastUpdate(update) {
+            const message = JSON.stringify(update);
+            console.log("Transmitiendo actualización:", update.type);
+            for (const id in dataChannels) {
+                const channel = dataChannels[id];
+                if (channel.readyState === 'open') {
+                    channel.send(message);
+                }
+            }
+        }
+
+        function handleIncomingUpdate(update) {
+            console.log("Recibiendo actualización:", update.type);
+            switch (update.type) {
+                case 'content_update':
+                    const contentDiv = document.getElementById(update.elementId);
+                    if (contentDiv && !contentDiv.isContentEditable) {
+                        contentDiv.innerHTML = update.content;
+                    }
+                    break;
+                case 'class_add':
+                    renderClass(update.classData);
+                    break;
+                case 'class_delete':
+                    const classEl = document.getElementById(`details-${update.docId}`);
+                    if (classEl) classEl.remove();
+                    break;
+                case 'game_add':
+                    renderGame(update.gameData);
+                    break;
+                case 'game_delete':
+                    const gameEl = document.getElementById(`game-${update.docId}`);
+                    if (gameEl) gameEl.remove();
+                    break;
+            }
+        }
+        
+        // --- Lógica de la Interfaz de Usuario (Modificada para WebRTC) ---
+        function renderClass(cls) {
+             const classModulesContainer = document.getElementById('class-modules-container');
+             if (!classModulesContainer || document.getElementById(`details-${cls.docId}`)) return;
+
+             const classHtml = `
+            <details class="info-details" id="details-${cls.docId}">
+                <summary class="info-summary">
+                    <span><i class="fas ${cls.icon || 'fa-book'} mr-3"></i>Clase ${cls.id}: ${cls.title}</span>
+                    <div class="ml-auto flex items-center">
+                        <button class="edit-button" onclick="startEdit(event, '${cls.docId}')">Modificar</button>
+                        <button class="delete-button action-button ml-2" onclick="deleteClass(event, '${cls.docId}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <i class="fas fa-chevron-down summary-icon ml-4"></i>
+                </summary>
+                <div id="content-${cls.docId}" class="details-content">${cls.content}</div>
+                <div class="editor-toolbar" id="toolbar-${cls.docId}">
+                     <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'bold');"><i class="fas fa-bold"></i></button>
+                     <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'italic');"><i class="fas fa-italic"></i></button>
+                     <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'insertUnorderedList');"><i class="fas fa-list-ul"></i></button>
+                     <button onmousedown="event.preventDefault(); addMedia('imagen', 'content-${cls.docId}');"><i class="fas fa-image"></i></button>
+                     <button onmousedown="event.preventDefault(); addMedia('video', 'content-${cls.docId}');"><i class="fas fa-video"></i></button>
+                     <div class="color-picker-wrapper ml-2"><input type="color" class="color-picker" onchange="formatDoc('content-${cls.docId}', 'foreColor', this.value)"></div>
+                </div>
+                <div class="action-buttons" id="actions-${cls.docId}"><button class="undo-button action-button" onclick="undoChanges(event, '${cls.docId}')">Deshacer</button><button class="save-button action-button" onclick="saveChanges(event, '${cls.docId}')">Guardar y Compartir</button></div>
+            </details>`;
+            classModulesContainer.insertAdjacentHTML('beforeend', classHtml);
+        }
+
+        function renderGame(game) {
+            const gamesContainer = document.getElementById('games-container');
+            if (!gamesContainer || document.getElementById(`game-${game.docId}`)) return;
+
+            const gameHtml = `
+            <div class="theme-card rounded-lg shadow-md overflow-hidden transform hover:-translate-y-1 transition-transform duration-300" id="game-${game.docId}">
+                <div class="p-6">
+                    <h4 class="font-bold text-xl mb-2 flex items-center">
+                        <i class="${game.icon || 'fas fa-gamepad'} mr-3 text-red-500"></i>${game.title}
+                    </h4>
+                    <p class="text-base mb-4">${game.description || ''}</p>
+                    <button onclick="openGameInCanvas('${game.docId}', this)" class="inline-block bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600"><i class="fas fa-play mr-2"></i>Abrir Juego</button>
+                    <button class="delete-button action-button ml-2" onclick="deleteGame(event, '${game.docId}')"><i class="fas fa-trash"></i></button>
+                </div>
+                <div class="hidden game-code-storage">${game.fullCode}</div>
+            </div>`;
+            gamesContainer.insertAdjacentHTML('beforeend', gameHtml);
+        }
+        
+        function startEdit(event, docId) {
+            event.preventDefault();
+            event.stopPropagation();
+            const contentDiv = document.getElementById(`content-${docId}`);
+            if (contentDiv.isContentEditable) return;
+            
+            const detailsElement = document.getElementById(`details-${docId}`);
+            originalContent[docId] = contentDiv.innerHTML;
+            contentDiv.contentEditable = 'true';
+            detailsElement.querySelector('.action-buttons').style.display = 'block';
+            detailsElement.querySelector('.toolbar').style.display = 'flex';
+            detailsElement.querySelector('.edit-button').style.display = 'none';
+            contentDiv.focus();
+        }
+
+        function saveChanges(event, docId) {
+            const contentDiv = document.getElementById(`content-${docId}`);
+            broadcastUpdate({
+                type: 'content_update',
+                elementId: `content-${docId}`,
+                content: contentDiv.innerHTML
+            });
+            endEdit(docId);
+            delete originalContent[docId];
+        }
+        
+        function undoChanges(event, docId) {
+            const contentDiv = document.getElementById(`content-${docId}`);
+            if (originalContent[docId]) {
+                contentDiv.innerHTML = originalContent[docId];
+            }
+            endEdit(docId);
+        }
+        
+        function endEdit(docId) {
+            const contentDiv = document.getElementById(`content-${docId}`);
+            const detailsElement = document.getElementById(`details-${docId}`);
+            contentDiv.contentEditable = 'false';
+            detailsElement.querySelector('.action-buttons').style.display = 'none';
+            detailsElement.querySelector('.toolbar').style.display = 'none';
+            detailsElement.querySelector('.edit-button').style.display = 'inline-block';
+        }
+        
+        document.getElementById('add-class-button').addEventListener('click', () => {
+            const numberInput = document.getElementById('new-class-number');
+            const titleInput = document.getElementById('new-class-title');
+            const iconInput = document.getElementById('new-class-icon');
+            const contentDiv = document.getElementById('new-class-content');
+            
+            if (!numberInput.value || !titleInput.value.trim()) {
+                alert('Por favor, completa el número y título de la clase.'); return;
+            }
+
+            const newClassData = {
+                id: parseInt(numberInput.value),
+                docId: 'class-' + Date.now(), // ID único
+                title: titleInput.value,
+                icon: iconInput.value.trim() || 'fa-book',
+                content: contentDiv.innerHTML
+            };
+
+            renderClass(newClassData); // Renderiza localmente
+            broadcastUpdate({ type: 'class_add', classData: newClassData }); // Comparte con los demás
+
+            // Limpia los campos
+            numberInput.value = ''; titleInput.value = ''; iconInput.value = '';
+            contentDiv.innerHTML = '<p>Escribe aquí el contenido de tu nueva clase...</p>';
+        });
+
+        function deleteClass(event, docId) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (confirm('¿Estás seguro de que quieres eliminar esta clase para todos?')) {
+                const classElement = document.getElementById(`details-${docId}`);
+                if(classElement) classElement.remove();
+                broadcastUpdate({ type: 'class_delete', docId: docId });
+            }
+        }
+        
+        document.getElementById('add-game-button').addEventListener('click', () => {
+            const titleInput = document.getElementById('new-game-title');
+            const descriptionInput = document.getElementById('new-game-description');
+            const iconInput = document.getElementById('new-game-icon');
+            const fullCodeInput = document.getElementById('new-game-full-code');
+            
+            if (!titleInput.value || !fullCodeInput.value) { alert('Por favor, completa al menos el título y el código del juego.'); return; }
+            
+            const newGameData = {
+                docId: 'game-' + Date.now(),
+                title: titleInput.value,
+                description: descriptionInput.value,
+                icon: iconInput.value.trim() || 'fas fa-gamepad',
+                fullCode: fullCodeInput.value
+            };
+
+            renderGame(newGameData); // Renderiza localmente
+            broadcastUpdate({ type: 'game_add', gameData: newGameData }); // Comparte
+            
+            // Limpia los campos
+            titleInput.value = ''; descriptionInput.value = ''; iconInput.value = ''; fullCodeInput.value = '';
+        });
+
+        function deleteGame(event, docId) {
+            event.preventDefault();
+            event.stopPropagation();
+             if (confirm('¿Estás seguro de que quieres eliminar este juego para todos?')) {
+                const gameElement = document.getElementById(`game-${docId}`);
+                if(gameElement) gameElement.remove();
+                broadcastUpdate({ type: 'game_delete', docId: docId });
+            }
+        }
+        
+        // --- Lógica de la UI (sin cambios) ---
+        function formatDoc(editorId, command, value = null) {
+            document.execCommand(command, false, value);
+        }
+
+        // ... (El resto de tus funciones de UI como las de temas, splash screen, menú, etc.)
+        document.getElementById('enter-app-button').addEventListener('click', () => {
+            document.getElementById('splash-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            connectToSignaling(); // Inicia la conexión al entrar a la app
+        });
+
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+        
+        const toTopButton = document.getElementById('to-top-button');
+        window.onscroll = () => {
+            toTopButton.style.display = (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) ? 'block' : 'none';
+        };
+        toTopButton.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+        const lightBtn = document.getElementById('theme-light-btn');
+        const sepiaBtn = document.getElementById('theme-sepia-btn');
+        const darkBtn = document.getElementById('theme-dark-btn');
+
+        function setTheme(theme) {
+            document.body.classList.remove('dark-mode', 'sepia-mode');
+            if (theme === 'dark') document.body.classList.add('dark-mode');
+            else if (theme === 'sepia') document.body.classList.add('sepia-mode');
+            localStorage.setItem('pageTheme', theme);
+        }
+
+        lightBtn.addEventListener('click', () => setTheme('light'));
+        sepiaBtn.addEventListener('click', () => setTheme('sepia'));
+        darkBtn.addEventListener('click', () => setTheme('dark'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('pageTheme') || 'light';
+            setTheme(savedTheme);
+        });
+
+        const gameModal = document.getElementById('game-modal');
+        const closeModalButton = document.getElementById('close-modal-button');
+        const gameCanvasIframe = document.getElementById('game-canvas-iframe');
+        const gameModalTitle = document.getElementById('game-modal-title');
+
+        function openGameInCanvas(gameId, buttonElement) {
+            const gameContainer = document.getElementById(`game-${gameId}`);
+            const code = gameContainer.querySelector('.game-code-storage').textContent;
+            const title = gameContainer.querySelector('h4').textContent;
+            
+            gameModalTitle.textContent = title;
+            gameCanvasIframe.srcdoc = code;
+            gameModal.classList.remove('hidden');
+        }
+
+        closeModalButton.addEventListener('click', () => {
+            gameModal.classList.add('hidden');
+            gameCanvasIframe.srcdoc = ''; 
+        });
+    </script>
+</body>
+</html>

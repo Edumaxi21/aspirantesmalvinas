@@ -1,0 +1,15 @@
+{
+  "name": "servidor-bomberos",
+  "version": "1.0.0",
+  "description": "Servidor de señalización para la guía de estudio.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.17.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
