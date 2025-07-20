@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guía de Estudio Colaborativa - Aspirantes 2025 (Versión Local)</title>
+    <title>Guía de Estudio Colaborativa - Aspirantes 2025</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     
     <style>
-        /* Tu CSS original va aquí, no ha cambiado */
         :root {
             --bg-color: #F9FAFB;
             --text-color: #1F2937;
@@ -149,7 +148,7 @@
 
             <section id="resumenes">
                 <h2 class="text-3xl font-bold mb-6 section-title">Resúmenes de Clases Colaborativos</h2>
-                <p class="mb-8">Utiliza estos resúmenes para repasar. Haz clic en "Modificar" para editar el contenido, y los cambios serán visibles para todos tus compañeros en tiempo real.</p>
+                <p class="mb-8">Los cambios que hagas aquí se guardarán y compartirán con todos tus compañeros en tiempo real.</p>
                 
                 <div id="class-modules-container">
                     </div>
@@ -264,188 +263,79 @@
             </div>
         </div>
     </div>
-
+    
     <script>
-        // --- Configuración y Variables Globales ---
-        // CAMBIAR 'localhost' por la IP de la computadora que corre el servidor si están en la misma red
-        const SIGNALING_SERVER_URL = "wss://aspirantesmalvinas.onrender.com"; 
-        let localId;
-        let peerConnections = {}; // Almacena las conexiones {id: RTCPeerConnection}
-        let dataChannels = {}; // Almacena los canales de datos {id: RTCDataChannel}
-        let originalContent = {}; // Para la función de deshacer
-
+        // ¡IMPORTANTE! Esta es la dirección de tu servidor en Render.
+        const SIGNALING_SERVER_URL = "wss://aspirantesmalvinas.onrender.com";
         let ws;
+        let originalContent = {};
 
-        function connectToSignaling() {
+        function connect() {
             ws = new WebSocket(SIGNALING_SERVER_URL);
 
-            ws.onopen = () => {
-                console.log("Conectado al servidor de señalización. ¡Listo para colaborar!");
-            };
-
-            ws.onmessage = async (message) => {
-                const data = JSON.parse(message.data);
-
-                switch (data.type) {
-                    case 'id':
-                        localId = data.id;
-                        console.log(`Recibí mi ID: ${localId}`);
-                        break;
-                    case 'all_users':
-                        console.log("Usuarios actuales en la sesión:", data.users);
-                        data.users.forEach(userId => {
-                            if (userId !== localId) {
-                                createPeerConnection(userId, true);
-                            }
-                        });
-                        break;
-                    case 'user_joined':
-                        if (data.id !== localId) {
-                            console.log(`Se unió un nuevo usuario: ${data.id}`);
-                            createPeerConnection(data.id, false);
-                        }
-                        break;
-                    case 'user_left':
-                        console.log(`El usuario ${data.id} se ha desconectado.`);
-                        if (peerConnections[data.id]) {
-                            peerConnections[data.id].close();
-                            delete peerConnections[data.id];
-                        }
-                        break;
-                    case 'signal':
-                        await handleSignal(data.from, data.signal);
-                        break;
-                }
-            };
-            
+            ws.onopen = () => console.log("Conectado al servidor guardián.");
             ws.onclose = () => {
-                console.log("Desconectado del servidor de señalización. Intentando reconectar en 3 segundos...");
-                setTimeout(connectToSignaling, 3000);
+                console.log("Desconectado. Intentando reconectar en 3 segundos...");
+                setTimeout(connect, 3000);
             };
-
-            ws.onerror = (error) => {
-                console.error("Error de WebSocket:", error);
+            ws.onerror = (err) => {
+                console.error("Error de WebSocket:", err);
                 ws.close();
             };
-        }
 
-        function sendSignal(to, signal) {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'signal', to, from: localId, signal }));
-            }
-        }
-
-        // --- Lógica de WebRTC ---
-        function createPeerConnection(partnerId, isInitiator) {
-            if (peerConnections[partnerId]) return;
-
-            const pc = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
-            peerConnections[partnerId] = pc;
-
-            pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                    sendSignal(partnerId, { candidate: event.candidate });
+            // El manejador de mensajes ahora es el corazón de la app
+            ws.onmessage = (message) => {
+                const data = JSON.parse(message.data);
+                switch (data.type) {
+                    case 'full_state_update':
+                        renderFullState(data.payload);
+                        break;
+                    case 'class_add':
+                        renderClass(data.payload);
+                        break;
+                    case 'class_update':
+                        const classDiv = document.getElementById(`content-${data.payload.docId}`);
+                        if (classDiv && !classDiv.isContentEditable) { // Solo actualiza si no lo estoy editando yo
+                           classDiv.innerHTML = data.payload.content;
+                        }
+                        break;
+                    case 'class_delete':
+                        const classEl = document.getElementById(`details-${data.payload.docId}`);
+                        if (classEl) classEl.remove();
+                        break;
+                    case 'game_add':
+                        renderGame(data.payload);
+                        break;
+                    case 'game_delete':
+                        const gameEl = document.getElementById(`game-${data.payload.docId}`);
+                        if (gameEl) gameEl.remove();
+                        break;
                 }
             };
-            
-            pc.onconnectionstatechange = () => {
-                if(pc.connectionState === 'disconnected' || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
-                    console.log(`Conexión con ${partnerId} perdida.`);
-                    delete peerConnections[partnerId];
-                }
-            };
+        }
 
-            if (isInitiator) {
-                const dataChannel = pc.createDataChannel('dataChannel');
-                setupDataChannel(partnerId, dataChannel);
-                pc.createOffer()
-                    .then(offer => pc.setLocalDescription(offer))
-                    .then(() => sendSignal(partnerId, { sdp: pc.localDescription }))
-                    .catch(e => console.error("Error creando oferta:", e));
-            } else {
-                pc.ondatachannel = (event) => {
-                    setupDataChannel(partnerId, event.channel);
-                };
+        // Función para enviar acciones al servidor
+        function sendUpdate(type, payload) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type, payload }));
             }
         }
         
-        async function handleSignal(fromId, signal) {
-            const pc = peerConnections[fromId];
-            if (!pc) {
-                createPeerConnection(fromId, false);
-            }
-
-            try {
-                if (signal.sdp) {
-                    await peerConnections[fromId].setRemoteDescription(new RTCSessionDescription(signal.sdp));
-                    if (signal.sdp.type === 'offer') {
-                        const answer = await peerConnections[fromId].createAnswer();
-                        await peerConnections[fromId].setLocalDescription(answer);
-                        sendSignal(fromId, { sdp: peerConnections[fromId].localDescription });
-                    }
-                } else if (signal.candidate) {
-                    await peerConnections[fromId].addIceCandidate(new RTCIceCandidate(signal.candidate));
-                }
-            } catch (e) {
-                console.error("Error manejando la señal:", e);
-            }
+        // --- Funciones para RENDERIZAR la página ---
+        function renderFullState(state) {
+            const classContainer = document.getElementById('class-modules-container');
+            const gamesContainer = document.getElementById('games-container');
+            classContainer.innerHTML = '';
+            gamesContainer.innerHTML = '';
+            state.classes.forEach(renderClass);
+            state.games.forEach(renderGame);
         }
 
-        function setupDataChannel(partnerId, channel) {
-            channel.onopen = () => console.log(`Canal de datos abierto con ${partnerId}`);
-            channel.onclose = () => console.log(`Canal de datos cerrado con ${partnerId}`);
-            channel.onmessage = (event) => {
-                handleIncomingUpdate(JSON.parse(event.data));
-            };
-            dataChannels[partnerId] = channel;
-        }
-
-        // --- Funciones para Sincronizar Contenido ---
-        function broadcastUpdate(update) {
-            const message = JSON.stringify(update);
-            console.log("Transmitiendo actualización:", update.type);
-            for (const id in dataChannels) {
-                const channel = dataChannels[id];
-                if (channel.readyState === 'open') {
-                    channel.send(message);
-                }
-            }
-        }
-
-        function handleIncomingUpdate(update) {
-            console.log("Recibiendo actualización:", update.type);
-            switch (update.type) {
-                case 'content_update':
-                    const contentDiv = document.getElementById(update.elementId);
-                    if (contentDiv && !contentDiv.isContentEditable) {
-                        contentDiv.innerHTML = update.content;
-                    }
-                    break;
-                case 'class_add':
-                    renderClass(update.classData);
-                    break;
-                case 'class_delete':
-                    const classEl = document.getElementById(`details-${update.docId}`);
-                    if (classEl) classEl.remove();
-                    break;
-                case 'game_add':
-                    renderGame(update.gameData);
-                    break;
-                case 'game_delete':
-                    const gameEl = document.getElementById(`game-${update.docId}`);
-                    if (gameEl) gameEl.remove();
-                    break;
-            }
-        }
-        
-        // --- Lógica de la Interfaz de Usuario (Modificada para WebRTC) ---
         function renderClass(cls) {
-             const classModulesContainer = document.getElementById('class-modules-container');
-             if (!classModulesContainer || document.getElementById(`details-${cls.docId}`)) return;
+            const classModulesContainer = document.getElementById('class-modules-container');
+            if (!classModulesContainer || document.getElementById(`details-${cls.docId}`)) return;
 
-             const classHtml = `
+            const classHtml = `
             <details class="info-details" id="details-${cls.docId}">
                 <summary class="info-summary">
                     <span><i class="fas ${cls.icon || 'fa-book'} mr-3"></i>Clase ${cls.id}: ${cls.title}</span>
@@ -457,14 +347,17 @@
                 </summary>
                 <div id="content-${cls.docId}" class="details-content">${cls.content}</div>
                 <div class="editor-toolbar" id="toolbar-${cls.docId}">
-                     <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'bold');"><i class="fas fa-bold"></i></button>
-                     <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'italic');"><i class="fas fa-italic"></i></button>
-                     <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'insertUnorderedList');"><i class="fas fa-list-ul"></i></button>
-                     <button onmousedown="event.preventDefault(); addMedia('imagen', 'content-${cls.docId}');"><i class="fas fa-image"></i></button>
-                     <button onmousedown="event.preventDefault(); addMedia('video', 'content-${cls.docId}');"><i class="fas fa-video"></i></button>
-                     <div class="color-picker-wrapper ml-2"><input type="color" class="color-picker" onchange="formatDoc('content-${cls.docId}', 'foreColor', this.value)"></div>
+                    <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'bold');"><i class="fas fa-bold"></i></button>
+                    <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'italic');"><i class="fas fa-italic"></i></button>
+                    <button onmousedown="event.preventDefault(); formatDoc('content-${cls.docId}', 'insertUnorderedList');"><i class="fas fa-list-ul"></i></button>
+                    <button onmousedown="event.preventDefault(); addMedia('imagen', 'content-${cls.docId}');"><i class="fas fa-image"></i></button>
+                    <button onmousedown="event.preventDefault(); addMedia('video', 'content-${cls.docId}');"><i class="fas fa-video"></i></button>
+                    <div class="color-picker-wrapper ml-2"><input type="color" class="color-picker" onchange="formatDoc('content-${cls.docId}', 'foreColor', this.value)"></div>
                 </div>
-                <div class="action-buttons" id="actions-${cls.docId}"><button class="undo-button action-button" onclick="undoChanges(event, '${cls.docId}')">Deshacer</button><button class="save-button action-button" onclick="saveChanges(event, '${cls.docId}')">Guardar y Compartir</button></div>
+                <div class="action-buttons" id="actions-${cls.docId}">
+                    <button class="undo-button action-button" onclick="undoChanges(event, '${cls.docId}')">Deshacer</button>
+                    <button class="save-button action-button" onclick="saveChanges(event, '${cls.docId}')">Guardar Cambios</button>
+                </div>
             </details>`;
             classModulesContainer.insertAdjacentHTML('beforeend', classHtml);
         }
@@ -480,13 +373,15 @@
                         <i class="${game.icon || 'fas fa-gamepad'} mr-3 text-red-500"></i>${game.title}
                     </h4>
                     <p class="text-base mb-4">${game.description || ''}</p>
-                    <button onclick="openGameInCanvas('${game.docId}', this)" class="inline-block bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600"><i class="fas fa-play mr-2"></i>Abrir Juego</button>
+                    <button onclick="openGameInCanvas('${game.docId}')" class="inline-block bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600"><i class="fas fa-play mr-2"></i>Abrir Juego</button>
                     <button class="delete-button action-button ml-2" onclick="deleteGame(event, '${game.docId}')"><i class="fas fa-trash"></i></button>
                 </div>
                 <div class="hidden game-code-storage">${game.fullCode}</div>
             </div>`;
             gamesContainer.insertAdjacentHTML('beforeend', gameHtml);
         }
+
+        // --- Funciones de interacción que ahora envían datos al servidor ---
         
         function startEdit(event, docId) {
             event.preventDefault();
@@ -494,41 +389,39 @@
             const contentDiv = document.getElementById(`content-${docId}`);
             if (contentDiv.isContentEditable) return;
             
-            const detailsElement = document.getElementById(`details-${docId}`);
+            const detailsElement = contentDiv.closest('.info-details');
             originalContent[docId] = contentDiv.innerHTML;
             contentDiv.contentEditable = 'true';
             detailsElement.querySelector('.action-buttons').style.display = 'block';
-            detailsElement.querySelector('.toolbar').style.display = 'flex';
+            detailsElement.querySelector('.editor-toolbar').style.display = 'flex';
             detailsElement.querySelector('.edit-button').style.display = 'none';
             contentDiv.focus();
-        }
-
-        function saveChanges(event, docId) {
-            const contentDiv = document.getElementById(`content-${docId}`);
-            broadcastUpdate({
-                type: 'content_update',
-                elementId: `content-${docId}`,
-                content: contentDiv.innerHTML
-            });
-            endEdit(docId);
-            delete originalContent[docId];
-        }
-        
-        function undoChanges(event, docId) {
-            const contentDiv = document.getElementById(`content-${docId}`);
-            if (originalContent[docId]) {
-                contentDiv.innerHTML = originalContent[docId];
-            }
-            endEdit(docId);
         }
         
         function endEdit(docId) {
             const contentDiv = document.getElementById(`content-${docId}`);
-            const detailsElement = document.getElementById(`details-${docId}`);
+            const detailsElement = contentDiv.closest('.info-details');
             contentDiv.contentEditable = 'false';
             detailsElement.querySelector('.action-buttons').style.display = 'none';
-            detailsElement.querySelector('.toolbar').style.display = 'none';
+            detailsElement.querySelector('.editor-toolbar').style.display = 'none';
             detailsElement.querySelector('.edit-button').style.display = 'inline-block';
+        }
+        
+        function undoChanges(event, docId) {
+            const contentDiv = document.getElementById(`content-${docId}`);
+            if (originalContent[docId] !== undefined) {
+                contentDiv.innerHTML = originalContent[docId];
+            }
+            endEdit(docId);
+        }
+
+        function saveChanges(event, docId) {
+            const contentDiv = document.getElementById(`content-${docId}`);
+            sendUpdate('class_update', {
+                docId: docId,
+                content: contentDiv.innerHTML
+            });
+            endEdit(docId);
         }
         
         document.getElementById('add-class-button').addEventListener('click', () => {
@@ -536,24 +429,23 @@
             const titleInput = document.getElementById('new-class-title');
             const iconInput = document.getElementById('new-class-icon');
             const contentDiv = document.getElementById('new-class-content');
-            
-            if (!numberInput.value || !titleInput.value.trim()) {
-                alert('Por favor, completa el número y título de la clase.'); return;
-            }
 
             const newClassData = {
                 id: parseInt(numberInput.value),
-                docId: 'class-' + Date.now(), // ID único
+                docId: 'class-' + Date.now(),
                 title: titleInput.value,
-                icon: iconInput.value.trim() || 'fa-book',
+                icon: iconInput.value.trim() || 'fas fa-book',
                 content: contentDiv.innerHTML
             };
 
-            renderClass(newClassData); // Renderiza localmente
-            broadcastUpdate({ type: 'class_add', classData: newClassData }); // Comparte con los demás
-
-            // Limpia los campos
-            numberInput.value = ''; titleInput.value = ''; iconInput.value = '';
+            if (!newClassData.id || !newClassData.title.trim()) {
+                return alert("El número y el título de la clase son obligatorios.");
+            }
+            sendUpdate('class_add', newClassData);
+            
+            numberInput.value = '';
+            titleInput.value = '';
+            iconInput.value = '';
             contentDiv.innerHTML = '<p>Escribe aquí el contenido de tu nueva clase...</p>';
         });
 
@@ -561,9 +453,7 @@
             event.preventDefault();
             event.stopPropagation();
             if (confirm('¿Estás seguro de que quieres eliminar esta clase para todos?')) {
-                const classElement = document.getElementById(`details-${docId}`);
-                if(classElement) classElement.remove();
-                broadcastUpdate({ type: 'class_delete', docId: docId });
+                sendUpdate('class_delete', { docId: docId });
             }
         }
         
@@ -572,9 +462,7 @@
             const descriptionInput = document.getElementById('new-game-description');
             const iconInput = document.getElementById('new-game-icon');
             const fullCodeInput = document.getElementById('new-game-full-code');
-            
-            if (!titleInput.value || !fullCodeInput.value) { alert('Por favor, completa al menos el título y el código del juego.'); return; }
-            
+
             const newGameData = {
                 docId: 'game-' + Date.now(),
                 title: titleInput.value,
@@ -582,73 +470,91 @@
                 icon: iconInput.value.trim() || 'fas fa-gamepad',
                 fullCode: fullCodeInput.value
             };
-
-            renderGame(newGameData); // Renderiza localmente
-            broadcastUpdate({ type: 'game_add', gameData: newGameData }); // Comparte
             
-            // Limpia los campos
-            titleInput.value = ''; descriptionInput.value = ''; iconInput.value = ''; fullCodeInput.value = '';
+            if (!newGameData.title || !newGameData.fullCode) {
+                return alert('Por favor, completa al menos el título y el código del juego.');
+            }
+            sendUpdate('game_add', newGameData);
+            
+            titleInput.value = '';
+            descriptionInput.value = '';
+            iconInput.value = '';
+            fullCodeInput.value = '';
         });
 
         function deleteGame(event, docId) {
             event.preventDefault();
             event.stopPropagation();
-             if (confirm('¿Estás seguro de que quieres eliminar este juego para todos?')) {
-                const gameElement = document.getElementById(`game-${docId}`);
-                if(gameElement) gameElement.remove();
-                broadcastUpdate({ type: 'game_delete', docId: docId });
+            if (confirm('¿Estás seguro de que quieres eliminar este juego para todos?')) {
+                sendUpdate('game_delete', { docId: docId });
             }
         }
-        
-        // --- Lógica de la UI (sin cambios) ---
+
+        // --- Funciones de la Interfaz de Usuario (sin cambios en su lógica interna) ---
         function formatDoc(editorId, command, value = null) {
+            document.getElementById(editorId).focus();
             document.execCommand(command, false, value);
         }
 
-        // ... (El resto de tus funciones de UI como las de temas, splash screen, menú, etc.)
+        function addMedia(type, editorId) {
+            const url = prompt(`Por favor, pega la URL de la ${type}:`);
+            if (!url) return;
+            let embedHtml = '';
+            if (type === 'imagen') {
+                embedHtml = `<img src="${url}" alt="Imagen insertada" style="max-width: 100%; border-radius: 0.5rem; margin: 1rem auto; display: block;">`;
+            } else if (type === 'video') {
+                let videoId;
+                if (url.includes('youtu.be/')) {
+                    videoId = url.split('youtu.be/')[1].split('?')[0];
+                } else if (url.includes('watch?v=')) {
+                    videoId = url.split('v=')[1].split('&')[0];
+                }
+                if (videoId) {
+                    embedHtml = `<p><iframe width="560" height="315" src="https://www.youtube.com/embed/$${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="max-width: 100%; margin: 1rem auto; display: block;"></iframe></p>`;
+                } else {
+                    alert('URL de YouTube no válida.'); return;
+                }
+            }
+            document.getElementById(editorId).focus();
+            document.execCommand('insertHTML', false, embedHtml);
+        }
+
         document.getElementById('enter-app-button').addEventListener('click', () => {
             document.getElementById('splash-screen').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
-            connectToSignaling(); // Inicia la conexión al entrar a la app
+            connect();
         });
 
         document.getElementById('menu-btn').addEventListener('click', () => {
             document.getElementById('mobile-menu').classList.toggle('hidden');
         });
-        
+
         const toTopButton = document.getElementById('to-top-button');
-        window.onscroll = () => {
-            toTopButton.style.display = (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) ? 'block' : 'none';
-        };
+        window.onscroll = () => toTopButton.style.display = (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) ? 'block' : 'none';
         toTopButton.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
         const lightBtn = document.getElementById('theme-light-btn');
         const sepiaBtn = document.getElementById('theme-sepia-btn');
         const darkBtn = document.getElementById('theme-dark-btn');
-
         function setTheme(theme) {
             document.body.classList.remove('dark-mode', 'sepia-mode');
             if (theme === 'dark') document.body.classList.add('dark-mode');
             else if (theme === 'sepia') document.body.classList.add('sepia-mode');
             localStorage.setItem('pageTheme', theme);
         }
-
         lightBtn.addEventListener('click', () => setTheme('light'));
         sepiaBtn.addEventListener('click', () => setTheme('sepia'));
         darkBtn.addEventListener('click', () => setTheme('dark'));
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('pageTheme') || 'light';
-            setTheme(savedTheme);
-        });
+        document.addEventListener('DOMContentLoaded', () => setTheme(localStorage.getItem('pageTheme') || 'light'));
 
         const gameModal = document.getElementById('game-modal');
         const closeModalButton = document.getElementById('close-modal-button');
         const gameCanvasIframe = document.getElementById('game-canvas-iframe');
         const gameModalTitle = document.getElementById('game-modal-title');
 
-        function openGameInCanvas(gameId, buttonElement) {
+        function openGameInCanvas(gameId) {
             const gameContainer = document.getElementById(`game-${gameId}`);
+            if (!gameContainer) return;
             const code = gameContainer.querySelector('.game-code-storage').textContent;
             const title = gameContainer.querySelector('h4').textContent;
             
@@ -661,6 +567,11 @@
             gameModal.classList.add('hidden');
             gameCanvasIframe.srcdoc = ''; 
         });
+
+        gameModal.addEventListener('click', (event) => {
+            if (event.target === gameModal) closeModalButton.click();
+        });
+
     </script>
 </body>
 </html>
