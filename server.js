@@ -74,6 +74,7 @@ wss.on('connection', ws => {
         try {
             const data = JSON.parse(message);
             let stateChanged = false; // Bandera para saber si debemos guardar
+            let broadcastData = data; // Datos a enviar a otros clientes
 
             switch (data.type) {
                 case 'class_add':
@@ -110,9 +111,10 @@ wss.on('connection', ws => {
                     break;
             }
 
-            // Si hubo un cambio, lo retransmitimos a TODOS y lo guardamos en el archivo.
+            // Si hubo un cambio, lo retransmitimos a TODOS LOS DEMÁS y lo guardamos en el archivo.
             if (stateChanged) {
-                broadcast(JSON.stringify(data)); // Enviamos solo la actualización a los demás
+                // El segundo parámetro 'ws' es el cliente que originó el mensaje
+                broadcast(JSON.stringify(broadcastData), ws); 
                 saveState(); // Guardamos el estado completo en el archivo
             }
 
@@ -126,10 +128,17 @@ wss.on('connection', ws => {
     });
 });
 
-// Función para enviar un mensaje a todos
-function broadcast(data) {
+/**
+ * Función para enviar un mensaje a todos los clientes CONECTADOS,
+ * excepto al que originó el mensaje.
+ * @param {string} data - El mensaje a enviar (como string).
+ * @param {WebSocket} originator - El cliente que envió el mensaje original.
+ */
+function broadcast(data, originator) {
     wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
+        // Solo envía si el cliente es diferente al que originó el mensaje
+        // y si la conexión está abierta.
+        if (client !== originator && client.readyState === WebSocket.OPEN) {
             client.send(data);
         }
     });
