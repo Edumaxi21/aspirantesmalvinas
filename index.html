@@ -285,31 +285,37 @@
 
             // El manejador de mensajes ahora es el corazón de la app
             ws.onmessage = (message) => {
-                const data = JSON.parse(message.data);
-                switch (data.type) {
-                    case 'full_state_update':
-                        renderFullState(data.payload);
-                        break;
-                    case 'class_add':
-                        renderClass(data.payload);
-                        break;
-                    case 'class_update':
-                        const classDiv = document.getElementById(`content-${data.payload.docId}`);
-                        if (classDiv && !classDiv.isContentEditable) { // Solo actualiza si no lo estoy editando yo
-                           classDiv.innerHTML = data.payload.content;
-                        }
-                        break;
-                    case 'class_delete':
-                        const classEl = document.getElementById(`details-${data.payload.docId}`);
-                        if (classEl) classEl.remove();
-                        break;
-                    case 'game_add':
-                        renderGame(data.payload);
-                        break;
-                    case 'game_delete':
-                        const gameEl = document.getElementById(`game-${data.payload.docId}`);
-                        if (gameEl) gameEl.remove();
-                        break;
+                try { // Añadido try-catch para evitar que un mensaje roto pare todo
+                    const data = JSON.parse(message.data);
+                    switch (data.type) {
+                        case 'full_state_update':
+                            renderFullState(data.payload);
+                            break;
+                        case 'class_add':
+                            renderClass(data.payload);
+                            break;
+                        case 'class_update':
+                            const classDiv = document.getElementById(`content-${data.payload.docId}`);
+                            // Solo actualiza si el elemento existe y no lo estoy editando yo.
+                            // Esto evita que un cambio que yo hice sea sobrescrito por el eco del servidor si llega con retraso.
+                            if (classDiv && !document.getElementById(`details-${data.payload.docId}`).hasAttribute('open')) {
+                               classDiv.innerHTML = data.payload.content;
+                            }
+                            break;
+                        case 'class_delete':
+                            const classEl = document.getElementById(`details-${data.payload.docId}`);
+                            if (classEl) classEl.remove();
+                            break;
+                        case 'game_add':
+                            renderGame(data.payload);
+                            break;
+                        case 'game_delete':
+                            const gameEl = document.getElementById(`game-${data.payload.docId}`);
+                            if (gameEl) gameEl.remove();
+                            break;
+                    }
+                } catch (error) {
+                    console.error("Error al procesar el mensaje del servidor:", error);
                 }
             };
         }
@@ -327,8 +333,13 @@
             const gamesContainer = document.getElementById('games-container');
             classContainer.innerHTML = '';
             gamesContainer.innerHTML = '';
-            state.classes.forEach(renderClass);
-            state.games.forEach(renderGame);
+            // Ordenar clases por número de ID antes de renderizar
+            if (state.classes) {
+                state.classes.sort((a, b) => a.id - b.id).forEach(renderClass);
+            }
+            if (state.games) {
+                state.games.forEach(renderGame);
+            }
         }
 
         function renderClass(cls) {
@@ -390,6 +401,7 @@
             if (contentDiv.isContentEditable) return;
             
             const detailsElement = contentDiv.closest('.info-details');
+            detailsElement.setAttribute('open', ''); // Forzar que esté abierto
             originalContent[docId] = contentDiv.innerHTML;
             contentDiv.contentEditable = 'true';
             detailsElement.querySelector('.action-buttons').style.display = 'block';
@@ -417,11 +429,17 @@
 
         function saveChanges(event, docId) {
             const contentDiv = document.getElementById(`content-${docId}`);
+            const newContent = contentDiv.innerHTML;
+
+            // Actualiza la vista local inmediatamente para una respuesta instantánea
+            endEdit(docId);
+            originalContent[docId] = newContent; // Actualiza el 'deshacer' cache
+            
+            // Envía la actualización al servidor para que otros la vean
             sendUpdate('class_update', {
                 docId: docId,
-                content: contentDiv.innerHTML
+                content: newContent
             });
-            endEdit(docId);
         }
         
         document.getElementById('add-class-button').addEventListener('click', () => {
@@ -496,23 +514,38 @@
             document.execCommand(command, false, value);
         }
 
+        // =======================================================
+        // ========= FUNCIÓN CORREGIDA Y MEJORADA ================
+        // =======================================================
         function addMedia(type, editorId) {
-            const url = prompt(`Por favor, pega la URL de la ${type}:`);
+            const url = prompt(`Por favor, pega la URL completa de la ${type}:`);
             if (!url) return;
             let embedHtml = '';
+
             if (type === 'imagen') {
                 embedHtml = `<img src="${url}" alt="Imagen insertada" style="max-width: 100%; border-radius: 0.5rem; margin: 1rem auto; display: block;">`;
             } else if (type === 'video') {
                 let videoId;
-                if (url.includes('youtu.be/')) {
-                    videoId = url.split('youtu.be/')[1].split('?')[0];
-                } else if (url.includes('watch?v=')) {
-                    videoId = url.split('v=')[1].split('&')[0];
-                }
-                if (videoId) {
-                    embedHtml = `<p><iframe width="560" height="315" src="https://www.youtube.com/embed/$${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="max-width: 100%; margin: 1rem auto; display: block;"></iframe></p>`;
+                // Expresión regular para capturar el ID de cualquier formato de URL de YouTube
+                const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                const match = url.match(youtubeRegex);
+                
+                if (match && match[1]) {
+                    videoId = match[1];
+                    // Genera un contenedor responsive para el video
+                    embedHtml = `
+                    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem auto;">
+                        <iframe 
+                            src="https://www.youtube.com/embed/${videoId}" 
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 0.5rem;" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>`;
                 } else {
-                    alert('URL de YouTube no válida.'); return;
+                    alert('URL de YouTube no válida. Por favor, usa una URL completa del video (ej: https://www.youtube.com/watch?v=...).');
+                    return;
                 }
             }
             document.getElementById(editorId).focus();
